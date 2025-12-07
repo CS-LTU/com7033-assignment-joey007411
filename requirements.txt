@@ -1,0 +1,10 @@
+pymongo
+pandas
+bleach
+flask
+flask_login
+flask_wtf
+flask_login
+flask_sqlalchemy
+dotenv
+werkzeug
