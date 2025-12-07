@@ -352,3 +352,81 @@ def patient_delete():
     finally:
         client.close()
     return redirect(url_for('dashboard.patient_list_full'))
+
+
+# ============================================================================
+# USER MANAGEMENT ROUTES - Admin-only operations
+# ============================================================================
+
+def admin_required(f):
+    """
+    Decorator to restrict route access to admin users only.
+    Redirects non-admin users to dashboard with error message.
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if session.get('role') != 'admin':
+            flash('Admin access required', 'error')
+            return redirect(url_for('dashboard.dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@dashboard_bp.route('/user_dashboard')
+@admin_required
+def user_dashboard():
+    """Display list of all users in the system"""
+    conn = get_sqlite_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT id, username, email, role FROM users ORDER BY id DESC")
+    users = cur.fetchall()
+    conn.close()
+    return render_template('user_dashboard.html', users=users)
+
+@dashboard_bp.route('/user_update', methods=['POST'])
+@admin_required
+def user_update():
+    """Update user details (username, email, role)"""
+    user_id = clean_text(request.form.get('id'), maxlen=32)
+    username = clean_text(request.form.get('username', ''), maxlen=150)
+    email = clean_text(request.form.get('email', ''), maxlen=254)
+    role = clean_text(request.form.get('role', 'user'), maxlen=50)
+    
+    if not user_id or not username or not email:
+        flash('All fields are required', 'error')
+        return redirect(url_for('dashboard.user_dashboard'))
+    
+    conn = get_sqlite_conn()
+    cur = conn.cursor()
+    try:
+        cur.execute("UPDATE users SET username = ?, email = ?, role = ? WHERE id = ?",
+                    (username, email, role, user_id))
+        conn.commit()
+        flash('User updated successfully', 'success')
+    except sqlite3.IntegrityError:
+        flash('Email or username already exists', 'error')
+    finally:
+        conn.close()
+    return redirect(url_for('dashboard.user_dashboard'))
+
+@dashboard_bp.route('/user_delete', methods=['POST'])
+@admin_required
+def user_delete():
+    """Delete a user account (prevents self-deletion)"""
+    user_id = clean_text(request.form.get('id'), maxlen=32)
+    
+    # Prevent admin from deleting their own account
+    if not user_id or int(user_id) == session.get('user_id'):
+        flash('Cannot delete your own account', 'error')
+        return redirect(url_for('dashboard.user_dashboard'))
+    
+    conn = get_sqlite_conn()
+    cur = conn.cursor()
+    try:
+        cur.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
+        flash('User deleted successfully', 'success')
+    except Exception:
+        flash('Failed to delete user', 'error')
+    finally:
+        conn.close()
+    return redirect(url_for('dashboard.user_dashboard'))
