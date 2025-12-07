@@ -53,8 +53,8 @@ def create_app(config=None):
 
     # register blueprints (auth and dashboard routes)
     from app.route import auth_bp
-  
+    from app.route import dashboard_bp
     app.register_blueprint(auth_bp)
-
+    app.register_blueprint(dashboard_bp)
 
     return app
