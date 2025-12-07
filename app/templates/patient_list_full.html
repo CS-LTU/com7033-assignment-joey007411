@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+    {% block title %}Patient List{% endblock %}
+
+    {% block content %}
+<body class="min-h-screen bg-[#f4fbff] text-[#05252b]">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-lg font-semibold">Patient list</h1>
+        <p class="text-sm text-gray-600">All patients (up to 200)</p>
+      </div>
+      <div class="flex gap-2 items-center">
+        <a href="{{ url_for('dashboard.dashboard') }}" class="text-[#0b7fa6] font-medium">Back to dashboard</a>
+        <a href="{{ url_for('dashboard.add_update_patient') }}" class="bg-[#0b7fa6] text-white px-3 py-1 rounded-md">New patient</a>
+        <button id="logout" class="bg-[#0b9fb6] text-white px-3 py-1 rounded-md">Logout</button>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-2 mb-4">
+          {% for category, message in messages %}
+            <div class="text-sm {% if category == 'error' %}text-red-600{% elif category == 'success' %}text-green-600{% else %}text-gray-700{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <section class="bg-white rounded-lg p-4 shadow-sm mb-4">
+      <div class="flex gap-2 items-center">
+        <input id="searchInput" type="text" placeholder="Search by ID or age..." 
+               class="flex-1 border rounded-md px-3 py-2 bg-white text-sm" />
+        <button id="clearSearch" class="bg-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm">Clear</button>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-lg p-4 shadow-sm">
+      <h2 class="text-sm font-medium mb-2">Patient List</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="text-left text-gray-500">
+            <tr>
+              <th class="pb-2">ID</th>
+              <th class="pb-2">Age</th>
+              <th class="pb-2">Gender</th>
+              <th class="pb-2">Residence</th>
+              <th class="pb-2">Work Type</th>
+              <th class="pb-2">Glucose Level</th>
+              <th class="pb-2">BMI</th>
+              <th class="pb-2">Hypertension</th>
+              <th class="pb-2">Heart Disease</th>
+              <th class="pb-2">Smoking Status</th>
+              <th class="pb-2">Stroke</th>
+              <th class="pb-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="patientTableBody">
+            {% if patients %}
+              {% for p in patients %}
+                <tr class="patient-row" data-id="{{ p.id }}" data-age="{{ p.age }}">
+                  <td class="py-2">{{ p.id }}</td>
+                  <td>{{ p.age }}</td>
+                  <td>{{ p.gender }}</td>
+                  <td>{{ p.Residence_type }}</td>
+                  <td>{{ p.work_type }}</td>
+                  <td>{{ p.avg_glucose_level }}</td>
+                  <td>{{ p.bmi }}</td>
+                  <td>{{ p.hypertension }}</td>
+                  <td>{{ p.heart_disease }}</td>
+                  <td>{{ p.smoking_status }}</td>
+                  <td>
+                    <span class="inline-flex px-2 py-1 rounded-full {% if p.stroke == 1 %}bg-[#fff4f4] text-[#d14343]{% else %}bg-[#f0fdff] text-[#0b7fa6]{% endif %} font-semibold text-xs">
+                      {% if p.stroke == 1 %}Yes{% else %}No{% endif %}
+                    </span>
+                  </td>
+                  <td>
+                    <a href="{{ url_for('dashboard.add_update_patient', id=p._id) }}" class="text-[#0b7fa6] hover:underline">Update</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr><td colspan="12" class="text-center py-4 text-gray-500">No patient data available</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Pagination controls -->
+    <div class="flex justify-between items-center mt-4">
+      <a href="{{ url_for('dashboard.patient_list_full', page=prev_page) }}" class="text-[#0b7fa6] hover:underline {% if not has_prev %}pointer-events-none text-gray-400{% endif %}">Previous</a>
+      <span class="text-sm text-gray-600">Page {{ current_page }} of {{ total_pages }}</span>
+      <a href="{{ url_for('dashboard.patient_list_full', page=next_page) }}" class="text-[#0b7fa6] hover:underline {% if not has_next %}pointer-events-none text-gray-400{% endif %}">Next</a>
+    </div>
+  </div>
+
+  <script>
+    // logout redirect (matches existing pages)
+    document.getElementById('logout').addEventListener('click', ()=> location.href = '{{ url_for("auth.logout") }}');
+
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const clearSearch = document.getElementById('clearSearch');
+    const patientRows = document.querySelectorAll('.patient-row');
+
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      patientRows.forEach(row => {
+        const id = row.dataset.id.toLowerCase();
+        const age = row.dataset.age.toLowerCase();
+        if (id.includes(query) || age.includes(query)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    });
+
+    clearSearch.addEventListener('click', () => {
+      searchInput.value = '';
+      patientRows.forEach(row => row.style.display = '');
+    });
+  </script>
+</body>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Child Page{% endblock %}
+
+{% block content %}
+<body class="min-h-screen bg-[#f4fbff] text-[#05252b]">
+  <div class="max-w-6xl mx-auto p-6 gap-6">
+    <div>
+      <header class="flex items-center justify-between mb-4">
+        <h1 class="text-lg font-semibold">Clinical Operations</h1>
+        <div class="flex gap-2 items-center">
+          {% if user_role == 'admin' %}
+            <a href="{{ url_for('dashboard.add_update_patient') }}" class="bg-[#0b7fa6] text-white px-3 py-1 rounded-md text-sm">New patient</a>
+          {% endif %}
+          <button id="logout" class="bg-[#0b7fa6] text-white px-3 py-1 rounded-md">Logout</button>
+        </div>
+      </header>
+
+      <section class="bg-white rounded-lg p-4 shadow-sm mb-4">
+        <div class="flex items-center justify-between">
+          <div class="flex gap-3">
+            <div class="bg-[#fbfeff] rounded-md p-3 min-w-[120px]">
+              <div class="text-xs text-gray-600">Active patients</div>
+              <div id="patients" class="text-xl font-bold text-[#0b7fa6]">
+                {{ patients_count if patients_count is not none else 0 }}
+              </div>
+            </div>
+          </div>
+          <div class="text-sm text-gray-600">{{ username if username is defined else 'User' }}</div>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-lg p-4 shadow-sm mb-4">
+        <h2 class="text-sm font-medium mb-2">Statistics</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-[#fbfeff] rounded-md p-3">
+            <div class="text-xs text-gray-600">Average BMI</div>
+            <div class="text-xl font-bold text-[#0b7fa6]">{{ avg_bmi|round(2) }}</div>
+          </div>
+          <div class="bg-[#fbfeff] rounded-md p-3">
+            <div class="text-xs text-gray-600">Average Glucose Level</div>
+            <div class="text-xl font-bold text-[#0b7fa6]">{{ avg_glucose|round(2) }}</div>
+          </div>
+          <div class="bg-[#fbfeff] rounded-md p-3">
+            <div class="text-xs text-gray-600">Stroke Cases</div>
+            <div class="text-xl font-bold text-[#d14343]">{{ stroke_count }}</div>
+          </div>
+          <div class="bg-[#fbfeff] rounded-md p-3">
+            <div class="text-xs text-gray-600">No Stroke Cases</div>
+            <div class="text-xl font-bold text-[#0b7fa6]">{{ no_stroke_count }}</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-lg p-4 shadow-sm mb-4">
+        <h2 class="text-sm font-medium mb-2">Gender Distribution</h2>
+        <ul class="list-disc list-inside text-sm">
+          {% for gender, count in gender_data.items() %}
+            <li><strong>{{ gender }}</strong>: {{ count }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+
+      <section class="bg-white rounded-lg p-4 shadow-sm">
+        <h2 class="text-sm font-medium mb-2">Recent patients</h2>
+        <div class="text-xs text-gray-600 mb-3">Click a row to see details</div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-left text-gray-500">
+              <tr>
+                <th class="pb-2">ID</th>
+                <th class="pb-2">Age</th>
+                <th class="pb-2">Gender</th>
+                <th class="pb-2">Residence</th>
+                <th class="pb-2">Work Type</th>
+                <th class="pb-2">Glucose Level</th>
+                <th class="pb-2">BMI</th>
+                <th class="pb-2">Stroke</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if patients %}
+                {% for p in patients %}
+                  <tr class="cursor-pointer" onclick="alert('Patient ID: {{ p.id }}')">
+                    <td class="py-2">{{ p.id }}</td>
+                    <td>{{ p.age }}</td>
+                    <td>{{ p.gender }}</td>
+                    <td>{{ p.Residence_type }}</td>
+                    <td>{{ p.work_type }}</td>
+                    <td>{{ p.avg_glucose_level }}</td>
+                    <td>{{ p.bmi }}</td>
+                    <td>
+                      <span class="inline-flex px-2 py-1 rounded-full {% if p.stroke == 1 %}bg-[#fff4f4] text-[#d14343]{% else %}bg-[#f0fdff] text-[#0b7fa6]{% endif %} font-semibold text-xs">
+                        {% if p.stroke == 1 %}Yes{% else %}No{% endif %}
+                      </span>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr><td colspan="8" class="text-center py-4 text-gray-500">No patient data available</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+ 
+  </div>
+
+  <script>
+    document.getElementById('logout').addEventListener('click', ()=> location.href = 'login.html');
+
+    function openPatient(id){
+      if(!id) return;
+      // redirect to add/update page (route expects ?id=)
+      window.location.href = "{{ url_for('dashboard.add_update_patient') }}?id=" + encodeURIComponent(id);
+    }
+  </script>
+</body>
+{% endblock %}

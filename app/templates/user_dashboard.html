@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<body class="min-h-screen bg-[#f4fbff] text-[#05252b]">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-lg font-semibold">User Management</h1>
+        <p class="text-sm text-gray-600">Manage system users</p>
+      </div>
+      <div class="flex gap-2 items-center">
+        <a href="{{ url_for('dashboard.dashboard') }}" class="text-[#0b7fa6] font-medium">Back to dashboard</a>
+        <button id="logout" class="bg-[#0b9fb6] text-white px-3 py-1 rounded-md">Logout</button>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-2 mb-4">
+          {% for category, message in messages %}
+            <div class="text-sm {% if category == 'error' %}text-red-600{% elif category == 'success' %}text-green-600{% else %}text-gray-700{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <section class="bg-white rounded-lg p-4 shadow-sm mb-4">
+      <div class="flex gap-2 items-center">
+        <input id="searchInput" type="text" placeholder="Search by username or email..." 
+               class="flex-1 border rounded-md px-3 py-2 bg-white text-sm" />
+        <button id="clearSearch" class="bg-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm">Clear</button>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-lg p-4 shadow-sm">
+      <h2 class="text-sm font-medium mb-2">Users List</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="text-left text-gray-500">
+            <tr>
+              <th class="pb-2">ID</th>
+              <th class="pb-2">Username</th>
+              <th class="pb-2">Email</th>
+              <th class="pb-2">Role</th>
+              <th class="pb-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody">
+            {% if users %}
+              {% for u in users %}
+                <tr class="user-row" data-username="{{ u.username }}" data-email="{{ u.email }}">
+                  <td class="py-2">{{ u.id }}</td>
+                  <td>{{ u.username }}</td>
+                  <td>{{ u.email }}</td>
+                  <td>
+                    <span class="inline-flex px-2 py-1 rounded-full {% if u.role == 'admin' %}bg-[#fff4f4] text-[#d14343]{% else %}bg-[#f0fdff] text-[#0b7fa6]{% endif %} font-semibold text-xs">
+                      {{ u.role }}
+                    </span>
+                  </td>
+                
+                  <td>
+                    <button class="text-[#0b7fa6] hover:underline edit-user" data-id="{{ u.id }}" data-username="{{ u.username }}" data-email="{{ u.email }}" data-role="{{ u.role }}">Edit</button>
+                    <span class="text-gray-400 mx-1">|</span>
+                    <form method="POST" action="{{ url_for('dashboard.user_delete') }}" style="display:inline;" onsubmit="return confirm('Are you sure?');">
+                      <input type="hidden" name="id" value="{{ u.id }}">
+                      <button type="submit" class="text-red-600 hover:underline">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr><td colspan="6" class="text-center py-4 text-gray-500">No users available</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- Edit User Modal -->
+  <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full">
+      <h2 class="text-lg font-semibold mb-4">Edit User</h2>
+      <form id="editForm" method="POST" action="{{ url_for('dashboard.user_update') }}">
+        <input type="hidden" id="editUserId" name="id">
+        
+        <div class="mb-3">
+          <label for="editUsername" class="block text-sm text-[#0b3b42]">Username</label>
+          <input id="editUsername" name="username" type="text" class="mt-1 w-full border rounded-md px-3 py-2 bg-white" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="editEmail" class="block text-sm text-[#0b3b42]">Email</label>
+          <input id="editEmail" name="email" type="email" class="mt-1 w-full border rounded-md px-3 py-2 bg-white" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="editRole" class="block text-sm text-[#0b3b42]">Role</label>
+          <select id="editRole" name="role" class="mt-1 w-full border rounded-md px-3 py-2 bg-white" required>
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+
+        <div class="flex gap-2">
+          <button type="submit" class="flex-1 bg-[#0b7fa6] text-white px-3 py-2 rounded-md">Save Changes</button>
+          <button type="button" id="closeModal" class="flex-1 bg-gray-300 text-gray-700 px-3 py-2 rounded-md">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('logout').addEventListener('click', ()=> location.href = '{{ url_for("auth.logout") }}');
+
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const clearSearch = document.getElementById('clearSearch');
+    const userRows = document.querySelectorAll('.user-row');
+
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      userRows.forEach(row => {
+        const username = row.dataset.username.toLowerCase();
+        const email = row.dataset.email.toLowerCase();
+        if (username.includes(query) || email.includes(query)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    });
+
+    clearSearch.addEventListener('click', () => {
+      searchInput.value = '';
+      userRows.forEach(row => row.style.display = '');
+    });
+
+    // Modal functionality
+    const editModal = document.getElementById('editModal');
+    const closeModal = document.getElementById('closeModal');
+    const editButtons = document.querySelectorAll('.edit-user');
+
+    editButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('editUserId').value = btn.dataset.id;
+        document.getElementById('editUsername').value = btn.dataset.username;
+        document.getElementById('editEmail').value = btn.dataset.email;
+        document.getElementById('editRole').value = btn.dataset.role;
+        editModal.classList.remove('hidden');
+      });
+    });
+
+    closeModal.addEventListener('click', () => {
+      editModal.classList.add('hidden');
+    });
+  </script>
+</body>
+{% endblock %}

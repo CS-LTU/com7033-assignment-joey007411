@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Patient{% endblock %}
+
+{% block content %}
+<body class="min-h-screen bg-[#f4fbff] text-[#05252b]">
+  <div class="max-w-3xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-lg font-semibold">
+          {% if patient %}Edit patient{% else %}Add patient{% endif %}
+        </h1>
+        <p class="text-sm text-gray-600">
+          Use the form below to add or update a patient record.
+        </p>
+      </div>
+
+      <div class="flex gap-2 items-center">
+        <a href="{{ url_for('dashboard.patient_list_full') }}" class="text-[#0b7fa6] font-medium">Back to list</a>
+        <button id="logout" class="bg-[#0b9fb6] text-white px-3 py-1 rounded-md">Logout</button>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-2 mb-4">
+          {% for category, message in messages %}
+            <div class="text-sm {% if category == 'error' %}text-red-600{% elif category == 'success' %}text-green-600{% else %}text-gray-700{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <section class="bg-white rounded-lg p-6 shadow-sm">
+      <form method="POST" action="{{ url_for('dashboard.add_update_patient') }}" novalidate>
+        {% if csrf_token() %}
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% endif %}
+
+        {# Hidden field 'id' is used by the route to detect/update an existing Mongo document.
+           Keep a separate visible field 'patient_id' for the dataset id to avoid collision. #}
+        <input type="hidden" name="id" value="{{ patient.get('_id') if patient else '' }}">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-[#0b3b42]">Dataset id</label>
+            <input name="patient_id" type="text" class="mt-1 w-full border rounded-md px-3 py-2"
+                   value="{{ patient.get('id')|default('') }}" placeholder="e.g. 1">
+          </div>
+
+          <div>
+            <label class="block text-sm text-[#0b3b42]">Gender</label>
+            <select name="gender" class="mt-1 w-full border rounded-md px-3 py-2">
+              {% set g = patient.get('gender')|default('') %}
+              <option value="" {% if not g %}selected{% endif %}>—</option>
+              <option value="Male" {% if g == 'Male' %}selected{% endif %}>Male</option>
+              <option value="Female" {% if g == 'Female' %}selected{% endif %}>Female</option>
+              <option value="Other" {% if g == 'Other' %}selected{% endif %}>Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm text-[#0b3b42]">Age</label>
+            <input name="age" type="number" min="0" step="1" class="mt-1 w-full border rounded-md px-3 py-2"
+                   value="{{ patient.get('age')|default('') }}" placeholder="e.g. 67">
+          </div>
+
+          <div>
+            <label class="block text-sm text-[#0b3b42]">Hypertension</label>
+            <select name="hypertension" class="mt-1 w-full border rounded-md px-3 py-2">
+              {% set ht = patient.get('hypertension')|string|default('') %}
+              <option value="" {% if ht == '' %}selected{% endif %}>—</option>
+              <option value="0" {% if ht in ['0','False','false'] %}selected{% endif %}>No</option>
+              <option value="1" {% if ht in ['1','True','true'] %}selected{% endif %}>Yes</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm text-[#0b3b42]">Heart disease</label>
+            <select name="heart_disease" class="mt-1 w-full border rounded-md px-3 py-2">
+              {% set hd = patient.get('heart_disease')|string|default('') %}
+              <option value="" {% if hd == '' %}selected{% endif %}>—</option>
+              <option value="0" {% if hd in ['0','False','false'] %}selected{% endif %}>No</option>
+              <option value="1" {% if hd in ['1','True','true'] %}selected{% endif %}>Yes</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm text-[#0b3b42]">Ever married</label>
+            <select name="ever_married" class="mt-1 w-full border rounded-md px-3 py-2">
+              {% set em = patient.get('ever_married')|default('') %}
+              <option value="" {% if em == '' %}selected{% endif %}>—</option>
+              <option value="Yes" {% if em == 'Yes' %}selected{% endif %}>Yes</option>
+              <option value="No" {% if em == 'No' %}selected{% endif %}>No</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm text-[#0b3b42]">Work type</label>
+            <select name="work_type" class="mt-1 w-full border rounded-md px-3 py-2">
+              {% set wt = patient.get('work_type')|default('') %}
+              <option value="" {% if wt == '' %}selected{% endif %}>—</option>
+              <option value="Private" {% if wt == 'Private' %}selected{% endif %}>Private</option>
+              <option value="Self-employed" {% if wt == 'Self-employed' %}selected{% endif %}>Self-employed</option>
+              <option value="Govt_job" {% if wt == 'Govt_job' %}selected{% endif %}>Govt job</option>
+              <option value="children" {% if wt == 'children' %}selected{% endif %}>Children</option>
+              <option value="Never_worked" {% if wt == 'Never_worked' %}selected{% endif %}>Never worked</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm text-[#0b3b42]">Residence type</label>
+            <select name="Residence_type" class="mt-1 w-full border rounded-md px-3 py-2">
+              {% set rt = patient.get('Residence_type')|default(patient.get('residence_type')|default('')) %}
+              <option value="" {% if rt == '' %}selected{% endif %}>—</option>
+              <option value="Urban" {% if rt == 'Urban' %}selected{% endif %}>Urban</option>
+              <option value="Rural" {% if rt == 'Rural' %}selected{% endif %}>Rural</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm text-[#0b3b42]">Avg glucose level</label>
+            <input name="avg_glucose_level" type="number" step="0.1" class="mt-1 w-full border rounded-md px-3 py-2"
+                   value="{{ patient.get('avg_glucose_level')|default('') }}" placeholder="e.g. 228.69">
+          </div>
+
+          <div>
+            <label class="block text-sm text-[#0b3b42]">BMI</label>
+            <input name="bmi" type="number" step="0.1" class="mt-1 w-full border rounded-md px-3 py-2"
+                   value="{{ patient.get('bmi')|default('') }}" placeholder="e.g. 36.6">
+          </div>
+
+          <div>
+            <label class="block text-sm text-[#0b3b42]">Smoking status</label>
+            <select name="smoking_status" class="mt-1 w-full border rounded-md px-3 py-2">
+              {% set ss = patient.get('smoking_status')|default('') %}
+              <option value="" {% if ss == '' %}selected{% endif %}>—</option>
+              <option value="formerly smoked" {% if ss == 'formerly smoked' %}selected{% endif %}>Formerly smoked</option>
+              <option value="never smoked" {% if ss == 'never smoked' %}selected{% endif %}>Never smoked</option>
+              <option value="smokes" {% if ss == 'smokes' %}selected{% endif %}>Smokes</option>
+              <option value="Unknown" {% if ss == 'Unknown' %}selected{% endif %}>Unknown</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm text-[#0b3b42]">Stroke</label>
+            <select name="stroke" class="mt-1 w-full border rounded-md px-3 py-2">
+              {% set st = patient.get('stroke')|string|default('') %}
+              <option value="" {% if st == '' %}selected{% endif %}>—</option>
+              <option value="0" {% if st in ['0','False','false'] %}selected{% endif %}>No</option>
+              <option value="1" {% if st in ['1','True','true'] %}selected{% endif %}>Yes</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-3 flex gap-3">
+          <button type="submit" class="bg-[#0b7fa6] text-white px-4 py-2 rounded-md">Save</button>
+          <a href="{{ url_for('dashboard.patient_list_full') }}" class="px-4 py-2 rounded-md border border-gray-200 text-gray-700">Cancel</a>
+        </div>
+
+        <p class="text-xs text-gray-500 mt-3">
+          Note: the form will send a hidden 'id' field (document id) when editing. The dataset's own id is posted as 'patient_id'.
+        </p>
+      </form>
+    </section>
+  </div>
+
+  <script>
+    // logout button behaviour
+    document.getElementById('logout').addEventListener('click', ()=> location.href = '{{ url_for("auth.logout") }}');
+
+    // Client-side small helper: if route requires 'name' and 'mrn' fields (existing code),
+    // auto-fill them from the dataset id if they are missing to prevent server validation errors.
+    document.getElementById('patientForm').addEventListener('submit', function(e){
+      // ensure hidden/required keys exist
+      function ensure(name, value){
+        if(!document.querySelector('[name="'+name+'"]')){
+          const inp = document.createElement('input');
+          inp.type = 'hidden';
+          inp.name = name;
+          inp.value = value || '';
+          this.appendChild(inp);
+        } else {
+          const el = document.querySelector('[name="'+name+'"]');
+          if(!el.value) el.value = value || '';
+        }
+      }
+      const pid = (document.querySelector('[name="patient_id"]') || {value: ''}).value.trim();
+      // 'name' and 'mrn' are expected by the current route implementation
+      ensure.call(this, 'name', pid ? ('Patient ' + pid) : 'Unknown');
+      ensure.call(this, 'mrn', pid || 'MRN-' + Math.floor(Math.random()*100000));
+    });
+  </script>
+</body>
+{% endblock %}

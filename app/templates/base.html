@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{% block title %}Medical Dashboard{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-[#f4fbff] text-[#05252b]">
+  <nav class="bg-white shadow-md p-4">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <a href="{{ url_for('dashboard.dashboard') }}" class="text-lg font-semibold text-[#0b7fa6]">Dashboard</a>
+      <div class="flex gap-4">
+          {% if session.get('role') == 'admin' %}
+        <a href="{{ url_for('dashboard.add_update_patient') }}" class="text-sm text-[#0b7fa6] hover:underline">Add/Update Patient</a>
+        {% endif %}
+        <a href="{{ url_for('dashboard.patient_list_full') }}" class="text-sm text-[#0b7fa6] hover:underline">Patient List</a>
+        {% if session.get('role') == 'admin' %}
+          <a href="{{ url_for('dashboard.user_dashboard') }}" class="text-sm text-[#0b7fa6] hover:underline">User Management</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+  <main class="max-w-7xl mx-auto p-6">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
