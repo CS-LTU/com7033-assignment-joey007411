@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Medical Dashboard — Register</title>
+   <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Optional: Inline Tailwind config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: '#1e40af',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen bg-[#f4fbff] flex items-center justify-center p-6">
+  <main class="w-full max-w-md bg-white rounded-xl shadow-lg p-6">
+    <h1 class="text-2xl font-semibold text-[#08343f] mb-2">Create account — Medical Dashboard</h1>
+    <p class="text-sm text-gray-600 mb-4">Register a new user to access the demo dashboard.</p>
+
+    <!-- show flashed messages from Flask -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-2 mb-3">
+          {% for category, message in messages %}
+            <div class="text-sm {% if category == 'error' %}text-red-600{% elif category == 'success' %}text-green-600{% else %}text-gray-700{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form id="registerForm" class="space-y-4" novalidate method="post" action="{{ url_for('auth.register') }}">
+      <!-- CSRF token placeholder -->
+      {% if csrf_token %}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% endif %}
+
+      <div>
+        <label for="username" class="block text-sm text-[#0b3b42]">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username"
+               class="mt-1 w-full border rounded-md px-3 py-2 bg-white" placeholder="Dr. Smith" required>
+      </div>
+
+      <div>
+        <label for="email" class="block text-sm text-[#0b3b42]">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email"
+               class="mt-1 w-full border rounded-md px-3 py-2 bg-white" placeholder="doctor@example.com" required>
+      </div>
+
+      <div>
+        <label for="password" class="block text-sm text-[#0b3b42]">Password</label>
+        <div class="relative mt-1">
+          <input id="password" name="password" type="password" autocomplete="new-password"
+                 class="w-full border rounded-md px-3 py-2 bg-white" placeholder="password" required>
+          <button type="button" id="togglePwdReg"
+                  class="absolute right-2 top-2 text-sm text-gray-500">Show</button>
+        </div>
+      </div>
+
+      <div>
+        <label for="password2" class="block text-sm text-[#0b3b42]">Confirm password</label>
+        <input id="password2" name="password2" type="password"
+               class="mt-1 w-full border rounded-md px-3 py-2 bg-white" placeholder="confirm password" required>
+      </div>
+
+      <div>
+        <label for="role" class="block text-sm text-[#0b3b42]">Role</label>
+        <select id="role" name="role"
+                class="mt-1 w-full border rounded-md px-3 py-2 bg-white" required>
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+
+      <div id="secretCodeDiv" class="hidden">
+        <label for="secret_code" class="block text-sm text-[#0b3b42]">Admin Secret Code</label>
+        <input id="secret_code" name="secret_code" type="password"
+               class="mt-1 w-full border rounded-md px-3 py-2 bg-white" placeholder="Enter secret code">
+      </div>
+
+      <div>
+        <button type="submit" class="w-full bg-[#0b7fa6] text-white font-semibold py-2 rounded-md">Create account</button>
+      </div>
+
+      <div id="regErr" class="text-sm text-red-600 hidden" role="alert"></div>
+
+      <div class="text-sm text-gray-600 text-center mt-3">
+        Already have an account?<br>
+        <a href="{{ url_for('auth.login') }}" class="text-[#0b7fa6] font-medium">Sign in</a>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    (function(){
+      const form = document.getElementById('registerForm');
+      const username = document.getElementById('username');
+      const email = document.getElementById('email');
+      const password = document.getElementById('password');
+      const password2 = document.getElementById('password2');
+      const role = document.getElementById('role');
+      const secretCodeDiv = document.getElementById('secretCodeDiv');
+      const secretCode = document.getElementById('secret_code');
+      const err = document.getElementById('regErr');
+      const toggle = document.getElementById('togglePwdReg');
+
+      // Show/hide secret code field based on role selection
+      role.addEventListener('change', ()=>{
+        if(role.value === 'admin'){
+          secretCodeDiv.classList.remove('hidden');
+          secretCode.required = true;
+        } else {
+          secretCodeDiv.classList.add('hidden');
+          secretCode.required = false;
+          secretCode.value = '';
+        }
+      });
+
+      toggle.addEventListener('click', ()=>{
+        const t = password.type === 'password' ? 'text' : 'password';
+        password.type = t;
+        password2.type = t;
+        toggle.textContent = t === 'text' ? 'Hide' : 'Show';
+      });
+
+      form.addEventListener('submit', (e)=>{
+        err.classList.add('hidden');
+        const u = username.value.trim();
+        const mail = email.value.trim();
+        const pwd = password.value;
+        const pwd2 = password2.value;
+        const r = role.value;
+        if(!u || !mail || !pwd || !pwd2){
+          e.preventDefault();
+          err.textContent = 'All fields are required.';
+          err.classList.remove('hidden');
+          return;
+        }
+        if(pwd.length < 6){
+          e.preventDefault();
+          err.textContent = 'Password must be at least 6 characters.';
+          err.classList.remove('hidden');
+          return;
+        }
+        if(pwd !== pwd2){
+          e.preventDefault();
+          err.textContent = 'Passwords do not match.';
+          err.classList.remove('hidden');
+          return;
+        }
+        if(r === 'admin' && !secretCode.value.trim()){
+          e.preventDefault();
+          err.textContent = 'Admin secret code is required.';
+          err.classList.remove('hidden');
+          return;
+        }
+        // let server handle registration; form will POST to /register
+      });
+    })();
+  </script>
+</body>
+</html>
